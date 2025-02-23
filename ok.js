@@ -47,7 +47,7 @@ app.post('/create-paypal-order', async (req, res) => {
       description: productName,
       amount: {
         currency_code: "EUR",
-        value: productPrice // Assicurati che il prezzo sia un valore numerico in formato stringa (es. "10.00")
+        value: productPrice // Il prezzo deve essere una stringa, ad esempio "10.00"
       }
     }],
     application_context: {
@@ -58,7 +58,6 @@ app.post('/create-paypal-order', async (req, res) => {
       cancel_url: "http://localhost:4242/cancel.html"
     }
   });
-
   try {
     const order = await paypalClient.execute(request);
     res.json({ orderID: order.result.id });
@@ -73,7 +72,6 @@ app.post('/capture-paypal-order', async (req, res) => {
   const { orderID } = req.body;
   const request = new paypal.orders.OrdersCaptureRequest(orderID);
   request.requestBody({});
-
   try {
     const capture = await paypalClient.execute(request);
     res.json(capture.result);
