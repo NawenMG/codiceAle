@@ -1,5 +1,7 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
+
 const stripe = require('stripe')('sk_test_yourStripeSecretKeyHere'); // Sostituisci con la tua chiave segreta di Stripe
 
 // Configurazione PayPal con @paypal/checkout-server-sdk
@@ -9,6 +11,8 @@ const paypalClient = new paypal.core.PayPalHttpClient(
   new Environment('YOUR_PAYPAL_CLIENT_ID', 'YOUR_PAYPAL_CLIENT_SECRET') // Sostituisci con le tue credenziali sandbox
 );
 
+// Abilita CORS per consentire le richieste dal front-end
+app.use(cors());
 app.use(express.json());
 
 /* Endpoint per Stripe Checkout */

@@ -158,7 +158,7 @@
     const cardCvc = elements.create("cardCvc", { style: style });
     cardCvc.mount("#card-cvc");
 
-    // Gestione del submit del form Stripe
+    // Gestione del submit del form Stripe: ora invia il token al backend
     const stripeForm = document.getElementById("stripe-payment-form");
     stripeForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -166,8 +166,28 @@
       if (error) {
         document.getElementById("card-errors").textContent = error.message;
       } else {
-        alert("Token creato per " + selectedProductName + ": " + token.id);
-        // In produzione, invia token e dettagli del prodotto al backend per completare il pagamento
+        // Invia il token e i dettagli del prodotto al backend per completare il pagamento
+        fetch("http://localhost:4242/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: token.id,
+            productName: selectedProductName,
+            productPrice: selectedProductPrice
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert("Pagamento completato con successo!");
+          } else {
+            alert("Errore durante il pagamento: " + data.error);
+          }
+        })
+        .catch(err => {
+          console.error("Errore:", err);
+          alert("Errore di comunicazione con il server.");
+        });
       }
     });
 
@@ -177,17 +197,29 @@
       document.getElementById('paypal-button-container').innerHTML = "";
       paypal.Buttons({
         createOrder: function(data, actions) {
-          return actions.order.create({
-            purchase_units: [{
-              description: selectedProductName,
-              amount: { value: selectedProductPrice }
-            }]
-          });
+          // Chiamata fetch al backend per creare un ordine PayPal
+          return fetch('http://localhost:4242/create-paypal-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productName: selectedProductName, productPrice: selectedProductPrice })
+          })
+          .then(response => response.json())
+          .then(orderData => orderData.orderID);
         },
         onApprove: function(data, actions) {
-          return actions.order.capture().then(function(details) {
+          // Chiamata fetch al backend per catturare l'ordine PayPal
+          return fetch('http://localhost:4242/capture-paypal-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderID: data.orderID })
+          })
+          .then(response => response.json())
+          .then(details => {
             alert('Transazione completata da ' + details.payer.name.given_name);
           });
+        },
+        onError: function(err) {
+          alert('Errore PayPal: ' + err);
         }
       }).render('#paypal-button-container');
     }
